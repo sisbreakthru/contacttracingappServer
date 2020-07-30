@@ -7,50 +7,229 @@ const eventRouter = express.Router();
 eventRouter.use(bodyParser.json());
 
 eventRouter.route('/')
-.all((req, res, next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html');
-    next();
+.get((req, res, next) => {
+    Event.find()
+    .then(events => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(events);
+    })
+    .catch(err => next(err));
 })
-.get((req, res) => {
-    res.end('Will send list of exposure event reports to you');
-})
-.post((req, res) => {
-    res.end(`Will add the following exposure event: ${req.body.title}
-        with the following description: ${req.body.description} and
-        date: ${req.body.date}.`);
+.post((req, res, next) => {
+    Event.create(req.body)
+    .then(event => {
+        console.log('Exposure Event Created', event);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(event);
+    })
+    .catch(err => next(err));
 })
 .put((req, res) => {
-    res.statusCode = 403;
-    res.end('PUT operations not supported on /events');
+    res.statusCode = 403; // forbidden
+    res.end('PUT operation not supported on /events');
 })
-.delete((req, res) => {
-    res.end('Deleting all exposure event reports.');
+.delete((req, res, next) => {
+    Event.deleteMany()
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response); // response is the number of docs deleted
+    })
+    .catch(err => next(err));
 });
 
 // Routing endpoints for individual event
 eventRouter.route('/:eventId')
-.all((req, res, next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html');
-    next();
-})
-.get((req, res) => {
-    res.end(`Will send details of exposure event: ${req.params.eventId} to you. `);
+.get((req, res, next) => {
+    Event.findById(req.params.eventId)
+    .then(event => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(event);
+    })
+    .catch(err => next(err));
 })
 .post((req, res) => {
     res.statusCode = 403; //forbidden
     res.end(`POST operation not supported on /events/${req.params.eventId}.`);
 })
+.put((req, res, next) => {
+    Event.findByIdAndUpdate(req.params.eventId, {
+        $set: req.body
+    } , { new: true })
+    .then(event => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(event);
+    })
+    .catch(err => next(err));
+})
+.delete((req, res, next) => {
+    Event.findByIdAndDelete(req.params.eventId)
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
+});
+
+
+eventRouter.route('/:eventId/contacts')
+.get((req, res, next) => {
+    Event.findById(req.params.eventId)
+    .then(event => {
+        if(event) {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json(event.contacts);
+        } else {
+            err = new Error(`Event ${req.params.eventId} not found.`);
+            err.status = 404;
+            return next(err);
+        }
+    })
+    .catch(err => next(err));
+})
+.post((req, res, next) => {
+    Event.findById(req.params.eventId)
+    .then(event => {
+        if(event) {
+            event.contacts.push(req.body);
+            event.save()  // the save method returns a promise
+            .then(event => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(event);
+            })
+            .catch(err => next(err));
+        } else {
+            err = new Error(`Event ${req.params.eventId} not found.`);
+            err.status = 404;
+            return next(err);
+        }
+    })
+    .catch(err => next(err));
+})
 .put((req, res) => {
-    res.write(`Updating the event: ${req.params.eventId}\n`);
-    res.end(`Will update the event with the following
-        information: Title: ${req.body.title}; Description: ${req.body.description};
-        Additional Info: ${req.body.comments}; Exposure Time: ${req.body.exposureTime}`);
+    res.statusCode = 403; // forbidden
+    res.end(`PUT operation not supported on /events/${req.params.eventId}/contacts`);
 })
-.delete((req, res) => {
-    res.end(`Deleting event: ${req.params.eventId}`);
+.delete((req, res, next) => {
+    Event.findById(req.params.eventId)
+    .then(event => {
+        if(event) {
+            for (let i = (event.contacts.length-1); i >=0; i--) {
+                event.contacts.id(event.contacts[i]._id).remove();
+            }
+            event.save()  // the save method returns a promise
+            .then(event => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(event.contacts);
+            })
+            .catch(err => next(err));
+        } else {
+            err = new Error(`Event ${req.params.eventId} not found.`);
+            err.status = 404;
+            return next(err);
+        }
+    })
+    .catch(err => next(err));
+});
+
+
+eventRouter.route('/:eventId/contacts/:contactId')
+.get((req, res, next) => {
+    Event.findById(req.params.eventId)
+    .then(event => {
+        if(event && event.contacts.id(req.params.contactId)) {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json(event.contacts.id(req.params.contactId));
+        } else if (!event) {
+            err = new Error(`Event ${req.params.eventId} not found.`);
+            err.status = 404;
+            return next(err);
+        } else {
+            err = new Error(`Contact ${req.params.contactId} not found.`);
+            err.status = 404;
+            return next(err);
+        }
+    })
+    .catch(err => next(err));
 })
+.post((req, res) => {
+    res.statusCode = 403;
+    res.end(`POST operation not supported on /events/${req.params.eventId}/contacts/${req.params.contactId}`);
+})
+.put((req, res, next) => {
+    Event.findById(req.params.eventId)
+    .then(event => {
+        if(event && event.contacts.id(req.params.contactId)) {
+            if (req.body.date) {
+                event.contacts.id(req.params.contactId).date = req.body.date;
+            }
+            if (req.body.firstname) {
+                event.contacts.id(req.params.contactId).firstname = req.body.firstname;
+            }
+            if (req.body.lastname) {
+                event.contacts.id(req.params.contactId).lastname = req.body.lastname;
+            }
+            if (req.body.phonenumber) {
+                event.contacts.id(req.params.contactId).phonenumber = req.body.phonenumber;
+            }
+            if (req.body.mobile) {
+                event.contacts.id(req.params.contactId).mobile = req.body.mobile;
+            }
+            if (req.body.exposureTime) {
+                event.contacts.id(req.params.contactId).exposureTime = req.body.exposureTime;
+            }
+            event.save()
+            .then(event => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(event);
+            })
+            .catch(err => next(err));
+        } else if (!event) {
+            err = new Error(`Event ${req.params.eventId} not found.`);
+            err.status = 404;
+            return next(err);
+        } else {
+            err = new Error(`Contact ${req.params.contactId} not found.`);
+            err.status = 404;
+            return next(err);
+        }
+    })
+    .catch(err => next(err));
+})
+.delete((req, res, next) => {
+    Event.findById(req.params.eventId)
+    .then(event => {
+        if(event && event.contacts.id(req.params.contactId)) {
+            event.contacts.id(req.params.contactId).remove();
+            event.save()
+            .then(event => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(event);
+            })
+            .catch(err => next(err));
+        } else if (!event) {
+            err = new Error(`Event ${req.params.eventId} not found.`);
+            err.status = 404;
+            return next(err);
+        } else {
+            err = new Error(`Contact ${req.params.contactId} not found.`);
+            err.status = 404;
+            return next(err);
+        }
+    })
+    .catch(err => next(err));
+});
 
 
 module.exports = eventRouter;

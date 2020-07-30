@@ -7,8 +7,8 @@ const logger = require('morgan');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const eventRouter = require('./routes/eventRouter');
-const contactlistNameRouter = require('./routes/contactlistNameRouter');
-const contactlistLocRouter = require('./routes/contactlistLocRouter');
+//const contactlistNameRouter = require('./routes/contactlistNameRouter');
+//const contactlistLocRouter = require('./routes/contactlistLocRouter');
 
 const mongoose = require('mongoose');
 
@@ -39,8 +39,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/events', eventRouter);
-app.use('/contactlistNames', contactlistNameRouter);
-app.use('/contactlistLocs', contactlistLocRouter);
+//app.use('/contactlistnames', contactlistNameRouter);
+//app.use('/contactlistlocs', contactlistLocRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

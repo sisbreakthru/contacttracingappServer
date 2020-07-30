@@ -1,57 +1,79 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const Contactlistloc = require('../models/contactlistLoc');
 
 const contactlistLocRouter = express.Router(); // Router() already built into Express
 
 contactlistLocRouter.use(bodyParser.json());  // use method helps us to attach middleware
 
 contactlistLocRouter.route('/')
-.all((req, res, next) => {  // catch all routing for all http verbs; path is set above
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html');
-    next(); // passes control to next relevant routing method
-}) 
-.get((req, res) => { // don't need to pass a next because we will not pass any more fxn
-    res.end('Will send all the contacts to you');
+.get((req, res, next) => { // don't need to pass a next because we will not pass any more fxn
+    Contactlistloc.find()
+    .then(contactlistlocs => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(contactlistlocs);
+    })
+    .catch(err => next(err));
 })
-.post((req, res) => {  // assumes data is in json format
-    console.log(req.body);
-    res.end(`Will add the contact: ${req.body.title} with the following information: 
-        Contact List Title: ${req.body.title}; Phone number: ${req.body.phonenumber}; 
-        Address: ${req.body.address}; City: ${req.body.city}; State: ${req.body.state};
-        Zipcode: ${req.body.zipcode}; Exposure Time: ${req.body.exposureTime}`);
+.post((req, res, next) => {  // assumes data is in json format
+    Contactlistloc.create(req.body)
+    .then(contactlistloc => {
+        console.log('Contact List Created', req.body);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(contactlistloc);
+    })
+    .catch(err => next(err));
 })
 .put((req, res) => {
     res.statusCode = 403; // forbidden
     res.end('PUT operation not supported on /contactlists');
 })
-.delete((req, res) => {
-    res.end('Deleting contact list and all contacts.');
+.delete((req, res, next) => {
+    Contactlistloc.deleteMany()
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
 
 // Routing methods for individual contact
 contactlistLocRouter.route('/:contactId')
-.all((req, res, next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html');
-    next();
-})
-.get((req, res) => { 
-    res.end(`Will send details of contact: ${req.params.contactId} to you`);
+.get((req, res, next) => { 
+    Contactlistloc.findById(req.params.contactId)
+    .then(contactlistloc => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(contactlistloc);
+    })
+    .catch(err = next(err));
 })
 .post((req, res) => {  
     res.statusCode = 403;
     res.end(`POST operation not supported on /contacts/${req.params.contactId}`);
 })
-.put((req, res) => {
-    res.write(`Updating the contact: ${req.params.contactId}\n`);
-    res.end(`Will update the contact: ${req.body.nameLoc} with 
-        the following information: Phone number: ${req.body.phonenumber}; 
-        Address: ${req.body.address}; City: ${req.body.city}; State: ${req.body.state};
-        Zipcode: ${req.body.zipcode}; Exposure Time: ${req.body.exposureTime}`);
+.put((req, res, next) => {
+    Contactlistloc.findByIdAndUpdate(req.params.contactId, {
+        $set: req.body
+    }, { new: true })
+    .then(contactlistloc => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(contactlistloc);
+    })
+    .catch(err => next(err));
 })
-.delete((req, res) => {
-    res.end(`Deleting contact: ${req.params.contactId}`);
+.delete((req, res, next) => {
+    Contactlistloc.findByIdAndDelete(req.params.contactId)
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
 
 

@@ -61,14 +61,14 @@ const contactlistLocSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref:'Event'
     },
-    title: {
+    listName: {
         type: String,
         required: true,
-        uniquer: true
+        default: "Contact List By Locations"
     },
     contactsLoc: [contactLocSchema]
 }, {
     timestamps: true
 });
 
-module.exports = mongoose.model('ContactlistLoc', contactlistLocSchema);
+module.exports = mongoose.model('Contactlistloc', contactlistLocSchema);

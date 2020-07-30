@@ -1,55 +1,90 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const Contactlistname = require('../models/contactlistName');
 
 const contactlistNameRouter = express.Router(); // Router() already built into Express
 
 contactlistNameRouter.use(bodyParser.json());  // use method helps us to attach middleware
 
-contactlistNameRouter.route('/')
-.all((req, res, next) => {  // catch all routing for all http verbs; path is set above
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html');
-    next(); // passes control to next relevant routing method
-}) 
-.get((req, res) => { // don't need to pass a next because we will not pass any more fxn
-    res.end('Will send all the contacts to you');
+contactlistNameRouter.route('/:eventId/contactlistnames')
+.get((req, res, next) => { 
+    Contactlistname.find({ event: req.params.eventId })
+    //.populate('event') // not working
+    .then(contactlistnames => {
+        console.log(contactlistnames);
+        if(contactlistnames) {
+            console.log(contactlistnames);
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json(contactlistnames);
+        } else {
+            console.log("My error message");
+            err = new Error(`There is no contact list by names for event id: ${req.params.eventId}.`);
+            err.status = 404;
+            return next(err);
+        }
+    })
+    .catch(err => next(err));
 })
-.post((req, res) => {  // assumes data is in json format
-    console.log(req.body);
-    res.end(`Will add the contact: ${req.body.firstname} ${req.body.lastname} with the following information: 
-        Contact List Title: ${req.body.title}; Phone number: ${req.body.phonenumber}; Mobile: ${req.body.mobile};
-        Exposure Time: ${req.body.exposureTime}`);
+.post((req, res, next) => {  // assumes data is in json format
+    Contactlistname.create(req.body)
+    .then(contactlistname => {
+        console.log('Contact List Created', req.body);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(contactlistname);
+    })
+    .catch(err => next(err));
 })
 .put((req, res) => {
     res.statusCode = 403; // forbidden
     res.end('PUT operation not supported on /contactlists');
 })
-.delete((req, res) => {
-    res.end('Deleting contact list and all contacts.');
+.delete((req, res, next) => {
+    Contactlistname.deleteMany()
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
 
-// Routing methods for individual contact
-contactlistNameRouter.route('/:contactId')
-.all((req, res, next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html');
-    next();
-})
-.get((req, res) => { 
-    res.end(`Will send details of contact: ${req.params.contactId} to you`);
+// Routing methods for contact list
+contactlistNameRouter.route('/:contactlistId')
+.get((req, res, next) => { 
+    Contactlistname.findById(req.params.contactlistId)
+    .then(contactlistname => {
+        console.log(contactlistname);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(contactlistname);
+    })
+    .catch(err => next(err));
 })
 .post((req, res) => {  
     res.statusCode = 403;
     res.end(`POST operation not supported on /contactlistNames/${req.params.contactId}`);
 })
-.put((req, res) => {
-    res.write(`Updating the contact: ${req.params.contactId}\n`);
-    res.end(`Will update the contact: ${req.body.firstname} ${req.body.lastname} with 
-        the following information: Phone number: ${req.body.phonenumber}; 
-        Mobile: ${req.body.mobile}`);
+.put((req, res, next) => {
+    Contactlistname.findByIdAndUpdate(req.params.contactId, {
+        $set: req.body
+    }, { new: true })
+    .then(contactlistname => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(contactlistname);
+    })
+    .catch(err => next(err));
 })
-.delete((req, res) => {
-    res.end(`Deleting contact: ${req.params.contactId}`);
+.delete((req, res, next) => {
+    Contactlistname.findByIdAndDelete(req.params.contactId)
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => new(err));
 });
 
 

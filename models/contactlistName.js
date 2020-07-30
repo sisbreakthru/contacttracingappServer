@@ -44,10 +44,10 @@ const contactlistNameSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Event'
     },
-    title: {
+    listName: {
         type: String,
         required: true,
-        unique: true
+        default: "Contact List By Names"
     },
     contactsName: [contactNameSchema]
 }, {
