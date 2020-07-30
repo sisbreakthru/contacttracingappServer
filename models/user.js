@@ -11,7 +11,7 @@ const userSchema = new Schema({
     //         },
     //         message: props => `${props.value} is not a valid email address! Please fill in a valid email address.`
     //     },
-    //     required: [true, 'Email address is required']
+    //     required: [true, 'A valid email address is required']
     // },
     admin: {
         type: Boolean,

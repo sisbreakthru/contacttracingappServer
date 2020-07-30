@@ -1,11 +1,13 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const Event = require('../models/event');
+const authenticate = require('../authenticate');
 
 const eventRouter = express.Router();
 
 eventRouter.use(bodyParser.json());
 
+// only authenticate POST, PUT and DELETE endpoints
 eventRouter.route('/')
 .get((req, res, next) => {
     Event.find()
@@ -16,7 +18,7 @@ eventRouter.route('/')
     })
     .catch(err => next(err));
 })
-.post((req, res, next) => {
+.post(authenticate.verifyUser, (req, res, next) => {
     Event.create(req.body)
     .then(event => {
         console.log('Exposure Event Created', event);
@@ -26,11 +28,11 @@ eventRouter.route('/')
     })
     .catch(err => next(err));
 })
-.put((req, res) => {
+.put(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403; // forbidden
     res.end('PUT operation not supported on /events');
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Event.deleteMany()
     .then(response => {
         res.statusCode = 200;
@@ -51,11 +53,11 @@ eventRouter.route('/:eventId')
     })
     .catch(err => next(err));
 })
-.post((req, res) => {
+.post(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403; //forbidden
     res.end(`POST operation not supported on /events/${req.params.eventId}.`);
 })
-.put((req, res, next) => {
+.put(authenticate.verifyUser, (req, res, next) => {
     Event.findByIdAndUpdate(req.params.eventId, {
         $set: req.body
     } , { new: true })
@@ -66,7 +68,7 @@ eventRouter.route('/:eventId')
     })
     .catch(err => next(err));
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Event.findByIdAndDelete(req.params.eventId)
     .then(response => {
         res.statusCode = 200;
@@ -93,7 +95,7 @@ eventRouter.route('/:eventId/contacts')
     })
     .catch(err => next(err));
 })
-.post((req, res, next) => {
+.post(authenticate.verifyUser, (req, res, next) => {
     Event.findById(req.params.eventId)
     .then(event => {
         if(event) {
@@ -113,11 +115,11 @@ eventRouter.route('/:eventId/contacts')
     })
     .catch(err => next(err));
 })
-.put((req, res) => {
+.put(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403; // forbidden
     res.end(`PUT operation not supported on /events/${req.params.eventId}/contacts`);
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Event.findById(req.params.eventId)
     .then(event => {
         if(event) {
@@ -161,11 +163,11 @@ eventRouter.route('/:eventId/contacts/:contactId')
     })
     .catch(err => next(err));
 })
-.post((req, res) => {
+.post(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.end(`POST operation not supported on /events/${req.params.eventId}/contacts/${req.params.contactId}`);
 })
-.put((req, res, next) => {
+.put(authenticate.verifyUser, (req, res, next) => {
     Event.findById(req.params.eventId)
     .then(event => {
         if(event && event.contacts.id(req.params.contactId)) {
@@ -206,7 +208,7 @@ eventRouter.route('/:eventId/contacts/:contactId')
     })
     .catch(err => next(err));
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Event.findById(req.params.eventId)
     .then(event => {
         if(event && event.contacts.id(req.params.contactId)) {
